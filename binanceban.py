@@ -5,12 +5,14 @@ try:
 except ImportError:
 	import Image
 import imagehash, pytesseract, os
+
 from pony.orm import *
 
-bot=botogram.create(os.environ["token_tg"])
-
+bot=botogram.create(os.environ["TOKEN_TG"])
 db = Database()
-db.bind(provider='mysql', host=os.environ['host'], user=os.environ['username'], passwd=os.environ['psw'], db=os.environ['db'])
+db.bind(provider='mysql', host=os.environ['MYSQL_HOST'],#+':'+os.environ["MYSQL_PORT"],
+                user=os.environ['MYSQL_USER'],  passwd=os.environ['MYSQL_PASSWORD'],
+                db=os.environ['MYSQL_DATABASE'])
 
 class Ocr(db.Entity):
     id = PrimaryKey(int, auto=True)
@@ -23,41 +25,44 @@ class Hash(db.Entity):
 db.generate_mapping(create_tables=True)
 
 def hash_core(filename):
+	img=Image.open(filename)
+	hash=str(imagehash.average_hash(img))
 	with db_session:
 		p1 = db.select('SELECT * FROM hash')
 		for i in p1:
-			if str(imagehash.average_hash(Image.open(filename))) == i[1]:
+			if hash == i[1]:
 				return True
-	Image.close()
+	img.close()
 	return False
 
 def hash2_core(filename):
+	img=Image.open(filename)
+	hash=str(imagehash.average_hash(img))
 	with db_session:
 		p1 = db.select('SELECT * FROM hash')
 		for i in p1:
-			hash=str(imagehash.average_hash(Image.open(filename)))
 			tot=0
 			different=0
-			if len(hash)==len(i[1]):
-				for world in i[1]:
-					if world != hash[tot]:
-						different+=1
-					tot+=1
+			for world in i[1]:
+				if world != hash[tot]:
+					different+=1
+				tot+=1
 
-				if ((100*different)/tot) <=18:
-					return True
-	Image.close()
+			if ((100*different)/tot) <=18:
+				return True
+	img.close()
 	return False
 
 
 def ocr_core(filename):
+	img=Image.open(filename)
 	with db_session:
 		p1 = db.select('SELECT * FROM ocr')
-		text=pytesseract.image_to_string(Image.open(filename),config='--psm 6').lower()
+		text=pytesseract.image_to_string(img,config='--psm 6').lower()
 		for i in p1:
 			if i[1] in text:
 				return True
-	Image.close()
+	img.close()
 	return False
 
 def img_core(filename):
@@ -80,7 +85,8 @@ def img_core(filename):
 		percentage=(dif / 255.0 * 100) / ncomponents
 		if percentage <= 5:
 			return True
-	Image.close()
+		i2.close()
+	i1.close()
 	return False
 
 @bot.message_edited
@@ -99,5 +105,6 @@ def message_ban(chat, message):
 		os.remove(name)
 
 
-if __name__ == 'main':
+if name == '__main__':
+	print('@'+bot.itself.username)
 	bot.run()
