@@ -1,0 +1,6 @@
+ImageHash==4.0
+botogram2==0.6
+pony==0.7.10
+pytesseract==0.3.0
+Image==1.5.27
+Pillow==6.1.0
