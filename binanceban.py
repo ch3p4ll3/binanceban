@@ -105,6 +105,6 @@ def message_ban(chat, message):
 		os.remove(name)
 
 
-if name == '__main__':
+if __name__ == '__main__':
 	print('@'+bot.itself.username)
 	bot.run()
